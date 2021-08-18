@@ -3,10 +3,9 @@ package com.security.uaa.util;
 import com.security.uaa.domain.Role;
 import com.security.uaa.domain.User;
 import com.security.uaa.resource.AppProperties;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
@@ -45,7 +44,6 @@ public class JwtUtil {
 
         return Jwts.builder()
                 .setId("mooc")
-                .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(now + timeToExpire))
                 .signWith(signKey, SignatureAlgorithm.HS512)
@@ -53,6 +51,7 @@ public class JwtUtil {
                         .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.toList())
                 )
+                .claim("username",userDetails.getUsername())
                 .compact();
     }
 
@@ -71,6 +70,48 @@ public class JwtUtil {
         }catch (Exception e){
             return Optional.empty();
         }
+    }
+
+    public boolean validateAccessToken(String jwtToken) {
+        return validateToken(jwtToken, key);
+    }
+
+    public boolean validateRefreshToken(String jwtToken) {
+        return validateToken(jwtToken, refreshKey);
+    }
+
+    public boolean validateToken(String token, Key signKey){
+
+        try {
+            Jwts.parserBuilder().setSigningKey(signKey).build()
+                    .parseClaimsJws(token);
+            return true;
+        } catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    public boolean validateWithoutExpiration(String jwtToken) {
+        try {
+            Jwts.parserBuilder().setSigningKey(JwtUtil.key).build().parseClaimsJws(jwtToken);
+            return true;
+        } catch (ExpiredJwtException | SignatureException | MalformedJwtException | UnsupportedJwtException | IllegalArgumentException e) {
+            if (e instanceof ExpiredJwtException) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public String buildAccessTokenWithRefreshToken(String jwtToken){
+        return parseClaims(jwtToken,refreshKey)
+                .map(claims -> Jwts.builder()
+                        .setClaims(claims)
+                        .setId("mooc")
+                        .setIssuedAt(new Date())
+                        .setExpiration(new Date(System.currentTimeMillis() + appProperties.getJwt().getAccessTokenExpireTime()))
+                        .signWith(key, SignatureAlgorithm.HS512).compact())
+                .orElseThrow();
     }
 
     public static void main(String[] args) {

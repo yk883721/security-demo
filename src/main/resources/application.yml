@@ -33,5 +33,5 @@ mooc:
   jwt:
     header: Authorization
     prefix: "Bearer "
-    access-token-expire-time: 300000
+    access-token-expire-time: 3000000
     refresh-token-expire-time: 2592000000

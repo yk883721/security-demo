@@ -6,7 +6,6 @@ import com.security.uaa.util.JwtUtil;
 import io.jsonwebtoken.Claims;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.orm.hibernate5.SpringSessionContext;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -52,7 +51,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 .map(String::valueOf)
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
-        var authentication = new UsernamePasswordAuthenticationToken(claims.getSubject(),null,authorities);
+        var authentication = new UsernamePasswordAuthenticationToken(claims.get("username"),null,authorities);
         SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 

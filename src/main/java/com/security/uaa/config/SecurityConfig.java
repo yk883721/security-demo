@@ -3,6 +3,7 @@ package com.security.uaa.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.security.uaa.filter.JwtFilter;
 import com.security.uaa.filter.RestAuthenticationFilter;
+import com.security.uaa.service.UserDetailsPasswordServiceImpl;
 import com.security.uaa.service.UserDetailsServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import java.util.Map;
 
 @Slf4j
-@EnableWebSecurity()
+@EnableWebSecurity(debug = true)
 @Configuration
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
@@ -40,7 +41,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private UserDetailsServiceImpl userDetailsService;
 
     @Autowired
-    private UserDetailsPasswordService userDetailsPasswordService;
+    private UserDetailsPasswordServiceImpl userDetailsPasswordService;
 
     @Autowired
     private JwtFilter jwtFilter;
@@ -49,11 +50,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests(req -> req.mvcMatchers("/api/**").authenticated())
-//                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterAt(restAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .formLogin(form ->
                         form.loginPage("/login")
-                        .defaultSuccessUrl("/api/greeting")
                         .successHandler(jsonLoginSuccessHandler())
                         .failureHandler(jsonLoginFailureHandler()))
 
@@ -103,7 +103,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     public void configure(WebSecurity web) throws Exception {
         web
                 .ignoring()
-                .antMatchers("/public/**","/h2-console/**")
+                .antMatchers("/public/**","/h2-console/**", "/authorize/**")
                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations());
     }
 
